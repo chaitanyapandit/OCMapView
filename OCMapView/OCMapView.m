@@ -133,6 +133,8 @@
 
 - (void)doClustering;
 {
+    NSArray *oldAnnotations = self.displayedAnnotations;
+    
     // only recluster if, annotations did change, map was zoomed or,
     // map was panned significantly
     if(!self.neeedsClustering && !MKMapRectIsNull(self.lastRefreshedMapRect) &&
@@ -204,6 +206,37 @@
         }
     }
     
+    NSMutableArray *changedAnnotations = [[NSMutableArray alloc] initWithArray:annotationsToDisplay];
+    for (id <MKAnnotation> newAnnotation in annotationsToDisplay) {
+        
+        BOOL isSame = NO;
+        
+        for (id <MKAnnotation> annotation in oldAnnotations) {
+            
+            // Both are OCAnnotations
+            if ([newAnnotation isKindOfClass:[OCAnnotation class]] && [annotation isKindOfClass:[OCAnnotation class]]) {
+                if ([newAnnotation isEqual:annotation]) {
+                    isSame = YES;
+                    break;
+                }
+            } else if (![newAnnotation isKindOfClass:[OCAnnotation class]] && ![annotation isKindOfClass:[OCAnnotation class]]) {
+                
+                if ([newAnnotation isEqual:annotation]) {
+                    isSame = YES;
+                    break;
+                }
+            }
+        }
+        
+        if (isSame) {
+            [changedAnnotations removeObject:newAnnotation];
+        }
+    }
+    
+    if (changedAnnotations.count) {
+        [self animateAnnotations:changedAnnotations];
+    }
+    
     // add not existing annotations
     [super addAnnotations:annotationsToDisplay];
     
@@ -211,6 +244,10 @@
     self.lastRefreshedMapRect = self.visibleMapRect;
     self.lastRefreshedMapRegion = self.region;
     self.neeedsClustering = NO;
+}
+
+- (void)animateAnnotations:(NSArray *)annotations {
+    
 }
 
 #pragma mark map rect changes tracking
